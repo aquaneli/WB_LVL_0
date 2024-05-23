@@ -67,5 +67,3 @@ CREATE TABLE IF NOT EXISTS information_order(
 	OofShard          varchar
 );
 
-
-

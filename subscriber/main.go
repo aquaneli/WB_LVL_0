@@ -5,22 +5,20 @@ package main
 
 import (
 	"database/sql"
-	// "encoding/json"
-	// "fmt"
-
+	"encoding/json"
 	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/nats-io/nats.go"
 )
 
-type Wb struct {
+type Orders struct {
 	OrderUid          string    `json:"order_uid"`
 	TrackNumber       string    `json:"track_number"`
 	Entry             string    `json:"entry"`
-	Delivery          Delivery    `json:"delivery"`
+	Delivery          Delivery  `json:"delivery"`
 	Payment           Payment   `json:"payment"`
-	Items             []Item      `json:"items"`
+	Items             []Item    `json:"items"`
 	Local             string    `json:"locale"`
 	InternalSignature string    `json:"internal_signature"`
 	CustomerId        string    `json:"customer_id"`
@@ -75,22 +73,23 @@ func main() {
 	}
 	defer nc.Close()
 
-	
-
 	db, err := sql.Open("postgres", "dbname=wb_db sslmode=disable")
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
-	if err = db.Ping(); err != nil{
+	if err = db.Ping(); err != nil {
 		panic(err)
 	}
 
+	var orders Orders
 
+	nc.Subscribe("a", func(msg *nats.Msg) {
+		err = json.Unmarshal(msg.Data, &orders)
+		// fmt.Print(orders.Delivery.Address)
+		// _, _ = db.Exec("insert into new_table(ID, OrderUid) values (COALESCE((SELECT MAX(id) FROM new_table), 0) + 1, 'qwe')")
+	})
 
-	// result, _ := db.Exec("insert into new_table(ID, OrderUid) values (COALESCE((SELECT MAX(id) FROM new_table), 0) + 1, 'qwe')")
-	// fmt.Println(result.LastInsertId())
-	// fmt.Println(result.RowsAffected())
-	
+	time.Sleep(1 * time.Hour)
 }
