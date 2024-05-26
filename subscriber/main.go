@@ -6,6 +6,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	_"net"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -84,12 +85,13 @@ func main() {
 	}
 
 	var orders Orders
-
 	nc.Subscribe("a", func(msg *nats.Msg) {
 		err = json.Unmarshal(msg.Data, &orders)
-		// fmt.Print(orders.Delivery.Address)
-		// _, _ = db.Exec("insert into new_table(ID, OrderUid) values (COALESCE((SELECT MAX(id) FROM new_table), 0) + 1, 'qwe')")
-	})
+		_, _ = db.Exec("insert into Delivery(id, Name,Phone,Zip,City,Address,Region,Email) values (COALESCE((SELECT MAX(id) FROM Delivery), 0) + 1, $1,$2,$3,$4,$5,$6,$7)",
+			orders.Delivery.Name, orders.Delivery.Phone, orders.Delivery.Zip, orders.Delivery.City, orders.Delivery.Address, orders.Delivery.Region, orders.Delivery.Email)
 
-	time.Sleep(1 * time.Hour)
+		_, _ = db.Exec("insert into Payment(id, Transaction, RequestId , Currency, Provider, Amount, PaymentDt,Bank,DeliveryCost, GoodsTotal, CustomFee) values (COALESCE((SELECT MAX(id) FROM Delivery), 0) + 1, $1,$2,$3,$4,$5,$6,$7)",
+			orders.Payment.Transaction, orders.Payment.RequestId, orders.Payment.Currency, orders.Payment.Provider, orders.Payment.Amount, orders.Payment.PaymentDt, orders.Payment.Bank, orders.Payment.DeliveryCost, orders.Payment.GoodsTotal, orders.Payment.CustomFee)
+
+	})
 }
