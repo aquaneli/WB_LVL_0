@@ -2,34 +2,21 @@
 <html>
 
 <head>
-    <title>Home</title>
-    <style>
-        body {
-            text-align: center;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #f0f0f0;
-        }
-
-        a.button {
-            display: inline-block;
-            margin: 0 5px;
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <title>New Product</title>
 </head>
 
 <body>
-    <a class="button" href="/add">ADD</a>
-    <a class="button" href="/find">FIND</a>
+    <h3>Add Product</h3>
+    <form method="POST">
+        <label>Model</label><br>
+        <input type="text" name="model" /><br><br>
+        <label>Company</label><br>
+        <input type="text" name="company" /><br><br>
+        <label>Price</label><br>
+        <input type="number" name="price" /><br><br>
+        <input type="submit" value="Send" />
+    </form>
 </body>
 
 </html>
