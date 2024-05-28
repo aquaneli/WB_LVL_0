@@ -107,11 +107,25 @@ func main() {
 		var orders Orders
 		nc.Subscribe("a", func(msg *nats.Msg) {
 			err = json.Unmarshal(msg.Data, &orders)
-			_, _ = db.Exec("insert into Delivery(id, Name,Phone,Zip,City,Address,Region,Email) values (COALESCE((SELECT MAX(id) FROM Delivery), 0) + 1, $1,$2,$3,$4,$5,$6,$7)",
-				orders.Delivery.Name, orders.Delivery.Phone, orders.Delivery.Zip, orders.Delivery.City, orders.Delivery.Address, orders.Delivery.Region, orders.Delivery.Email)
 
-			_, _ = db.Exec("insert into Payment(id, Transaction, RequestId , Currency, Provider, Amount, PaymentDt,Bank,DeliveryCost, GoodsTotal, CustomFee) values (COALESCE((SELECT MAX(id) FROM Payment), 0) + 1, $1,$2,$3,$4,$5,$6,$7, $8, $9, $10)",
-				orders.Payment.Transaction, orders.Payment.RequestId, orders.Payment.Currency, orders.Payment.Provider, orders.Payment.Amount, orders.Payment.PaymentDt, orders.Payment.Bank, orders.Payment.DeliveryCost, orders.Payment.GoodsTotal, orders.Payment.CustomFee)
+			_, _ = db.Exec(`INSERT INTO information_order(id, order_uid, track_number, entry, local, internal_signature, customer_id, delivery_service, shardkey, sm_id, date_created, oof_shard)
+			VALUES (COALESCE((SELECT MAX(id) FROM information_order), 0) + 1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, orders.OrderUid, orders.TrackNumber, orders.Entry, orders.Local,
+				orders.InternalSignature, orders.CustomerId, orders.DeliveryService, orders.Shardkey, orders.SmId, orders.DateCreated, orders.OofShard)
+
+			_, _ = db.Exec(`INSERT INTO delivery(id, order_id, name, phone, zip, city, address, region, email) 
+			VALUES (COALESCE((SELECT MAX(id) FROM delivery), 0) + 1, (SELECT MAX(id) FROM information_order), $1, $2, $3, $4, $5, $6, $7)`, orders.Delivery.Name, orders.Delivery.Phone,
+				orders.Delivery.Zip, orders.Delivery.City, orders.Delivery.Address, orders.Delivery.Region, orders.Delivery.Email)
+
+			_, _ = db.Exec(`INSERT INTO payment(id, order_id, transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_fee) 
+				VALUES (COALESCE((SELECT MAX(id) FROM payment), 0) + 1, (SELECT MAX(id) FROM information_order), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, orders.Payment.Transaction,
+				orders.Payment.RequestId, orders.Payment.Currency, orders.Payment.Provider, orders.Payment.Amount, orders.Payment.PaymentDt, orders.Payment.Bank, orders.Payment.DeliveryCost,
+				orders.Payment.GoodsTotal, orders.Payment.CustomFee)
+
+			for _, value := range orders.Items {
+				_, _ = db.Exec(`INSERT INTO items(id, order_id, chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status) 
+				VALUES (COALESCE((SELECT MAX(id) FROM items), 0) + 1, (SELECT MAX(id) FROM information_order), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, value.ChrtId,
+					value.TrackNumber, value.Price, value.Rid, value.Name, value.Sale, value.Size, value.TotalPrice, value.NmID, value.Brand, value.Status)
+			}
 
 		})
 		wg.Wait()
