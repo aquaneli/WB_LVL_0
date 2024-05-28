@@ -1,12 +1,13 @@
 package main
 
-// go mod init github.com/lib/pq создался файл .mod
-// go get github.com/lib/pq скачивание пакета
-
 import (
 	"database/sql"
 	"encoding/json"
-	_"net"
+	"fmt"
+	"html/template"
+	_ "net"
+	"net/http"
+	"sync"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -67,31 +68,54 @@ type Item struct {
 	Status      int    `json:"status"`
 }
 
+type tmp struct {
+	Info string
+}
+
 func main() {
-	nc, err := nats.Connect(nats.DefaultURL)
-	if err != nil {
-		panic(err)
-	}
-	defer nc.Close()
+	var wg sync.WaitGroup
+	wg.Add(1)
 
-	db, err := sql.Open("postgres", "dbname=wb_db sslmode=disable")
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
+	go func() {
+		var num tmp = tmp{}
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			num.Info = r.FormValue("Id")
+			tmpl, _ := template.ParseFiles("home.html")
+			tmpl.Execute(w, num)
+		})
+		fmt.Println("Server is listening...")
+		http.ListenAndServe("localhost:8181", nil)
+	}()
 
-	if err = db.Ping(); err != nil {
-		panic(err)
-	}
+	go func() {
+		nc, err := nats.Connect(nats.DefaultURL)
+		if err != nil {
+			panic(err)
+		}
+		defer nc.Close()
 
-	var orders Orders
-	nc.Subscribe("a", func(msg *nats.Msg) {
-		err = json.Unmarshal(msg.Data, &orders)
-		_, _ = db.Exec("insert into Delivery(id, Name,Phone,Zip,City,Address,Region,Email) values (COALESCE((SELECT MAX(id) FROM Delivery), 0) + 1, $1,$2,$3,$4,$5,$6,$7)",
-			orders.Delivery.Name, orders.Delivery.Phone, orders.Delivery.Zip, orders.Delivery.City, orders.Delivery.Address, orders.Delivery.Region, orders.Delivery.Email)
+		db, err := sql.Open("postgres", "dbname=wb_db sslmode=disable")
+		if err != nil {
+			panic(err)
+		}
+		defer db.Close()
 
-		_, _ = db.Exec("insert into Payment(id, Transaction, RequestId , Currency, Provider, Amount, PaymentDt,Bank,DeliveryCost, GoodsTotal, CustomFee) values (COALESCE((SELECT MAX(id) FROM Delivery), 0) + 1, $1,$2,$3,$4,$5,$6,$7)",
-			orders.Payment.Transaction, orders.Payment.RequestId, orders.Payment.Currency, orders.Payment.Provider, orders.Payment.Amount, orders.Payment.PaymentDt, orders.Payment.Bank, orders.Payment.DeliveryCost, orders.Payment.GoodsTotal, orders.Payment.CustomFee)
+		if err = db.Ping(); err != nil {
+			panic(err)
+		}
 
-	})
+		var orders Orders
+		nc.Subscribe("a", func(msg *nats.Msg) {
+			err = json.Unmarshal(msg.Data, &orders)
+			_, _ = db.Exec("insert into Delivery(id, Name,Phone,Zip,City,Address,Region,Email) values (COALESCE((SELECT MAX(id) FROM Delivery), 0) + 1, $1,$2,$3,$4,$5,$6,$7)",
+				orders.Delivery.Name, orders.Delivery.Phone, orders.Delivery.Zip, orders.Delivery.City, orders.Delivery.Address, orders.Delivery.Region, orders.Delivery.Email)
+
+			_, _ = db.Exec("insert into Payment(id, Transaction, RequestId , Currency, Provider, Amount, PaymentDt,Bank,DeliveryCost, GoodsTotal, CustomFee) values (COALESCE((SELECT MAX(id) FROM Payment), 0) + 1, $1,$2,$3,$4,$5,$6,$7, $8, $9, $10)",
+				orders.Payment.Transaction, orders.Payment.RequestId, orders.Payment.Currency, orders.Payment.Provider, orders.Payment.Amount, orders.Payment.PaymentDt, orders.Payment.Bank, orders.Payment.DeliveryCost, orders.Payment.GoodsTotal, orders.Payment.CustomFee)
+
+		})
+		wg.Wait()
+	}()
+
+	wg.Wait()
 }

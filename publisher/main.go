@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
-	"time"
 
 	"github.com/nats-io/nats.go"
 )
@@ -23,7 +23,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	_ = ns.Publish("a", byteValue)
 
-	time.Sleep(1 * time.Hour)
+	err = ns.Publish("a", byteValue)
+	if err != nil {
+		panic(err)
+	}
+	log.Println("Message published successfully")
 }
