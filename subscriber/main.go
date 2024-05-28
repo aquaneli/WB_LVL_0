@@ -68,26 +68,36 @@ type Item struct {
 	Status      int    `json:"status"`
 }
 
-type tmp struct {
-	Info string
-}
-
 func main() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
+	// go func(){
+	// 	db, _ := sql.Open("postgres", "dbname=wb_db sslmode=disable")
+	// 	defer db.Close()
+		
+	// 	rows, _ := db.Query("SELECT * FROM information_order")
+	// 	defer rows.Close()
+
+	// 	var orders []Orders
+	// 	for rows.Next(){
+	// 		var order Orders
+	// 		rows.Scan()
+	// 		orders = append(orders, order)
+	// 	}
+	// }()
+
 	go func() {
-		var num tmp = tmp{}
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			num.Info = r.FormValue("Id")
-			tmpl, _ := template.ParseFiles("home.html")
-			tmpl.Execute(w, num)
+			_ , _ = template.ParseFiles("home.html")
+			// tmpl.Execute(w, orders)
 		})
 		fmt.Println("Server is listening...")
 		http.ListenAndServe("localhost:8181", nil)
 	}()
 
 	go func() {
+		var orders Orders
 		nc, err := nats.Connect(nats.DefaultURL)
 		if err != nil {
 			panic(err)
@@ -104,7 +114,6 @@ func main() {
 			panic(err)
 		}
 
-		var orders Orders
 		nc.Subscribe("a", func(msg *nats.Msg) {
 			err = json.Unmarshal(msg.Data, &orders)
 
