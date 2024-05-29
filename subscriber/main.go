@@ -70,6 +70,7 @@ type Item struct {
 
 func main() {
 	var wg sync.WaitGroup
+	var orders = make(map[string]Orders)
 	wg.Add(1)
 
 	go func() {
@@ -79,7 +80,6 @@ func main() {
 		rows, _ := db.Query("SELECT id, order_uid, track_number, entry, local, internal_signature, customer_id, delivery_service, shardkey, sm_id, date_created, oof_shard FROM information_order")
 		defer rows.Close()
 
-		var orders []Orders
 		for rows.Next() {
 			var order Orders = Orders{}
 			var id int
@@ -119,19 +119,18 @@ func main() {
 				order.Items = append(order.Items, itm)
 			}
 
-			orders = append(orders, order)
+			orders[order.OrderUid] = order
 		}
 
-		js, _ := json.Marshal(orders)
-
-		fmt.Println(string(js))
-
+		// js, _ := json.Marshal(orders)
+		// fmt.Println(string(js))
 	}()
 
 	go func() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			tmpl, _ := template.ParseFiles("home.html")
-			tmpl.Execute(w, "")
+			id := r.FormValue("Id")
+			tmpl.Execute(w, orders[id])
 		})
 		fmt.Println("Server is listening...")
 		http.ListenAndServe("localhost:8181", nil)

@@ -10,10 +10,10 @@
     <h3>Show Order</h3>
     <form method="POST" action="">
         <label>Id</label><br>
-        <input type="number" name="Id" /><br><br>
+        <input type="string" name="Id" /><br><br>
         <input type="submit" value="Show" />
     </form>
-    <p>{{ . }}</p>
+    <p>order_uid {{ .OrderUid }}</p>
 </body>
 
 </html>
