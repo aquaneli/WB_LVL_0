@@ -10,11 +10,11 @@ import (
 )
 
 func main() {
-	f, err := os.Open("/Users/aquaneli/go_lerning/model.json")
+	f, err := os.Open("/Users/aquaneli/WB_LVL_0/model.json")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Successfully Opened /Users/aquaneli/go_lerning/model.json")
+	fmt.Println("Successfully Opened /Users/aquaneli/WB_LVL_0/model.json")
 	defer f.Close()
 
 	byteValue, _ := io.ReadAll(f)

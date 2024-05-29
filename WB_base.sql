@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS information_order(
 	customer_id        VARCHAR,
 	delivery_service   VARCHAR,
 	shardkey          VARCHAR,
-	sm_id              INT,
-	date_created       time,
+	sm_id              BIGINT,
+	date_created       TIME,
 	oof_shard          VARCHAR
 );
 
@@ -48,27 +48,28 @@ CREATE TABLE IF NOT EXISTS payment(
 	request_id    VARCHAR,
 	currency     VARCHAR,
 	provider     VARCHAR,
-	amount       INT,
-	payment_dt    INT,
+	amount       BIGINT,
+	payment_dt    BIGINT,
 	bank         VARCHAR,
-	delivery_cost INT,
-	goods_total   INT,
-	custom_fee    INT
+	delivery_cost BIGINT,
+	goods_total   BIGINT,
+	custom_fee    BIGINT
 );
 
 CREATE TABLE IF NOT EXISTS items(
     id BIGINT PRIMARY KEY NOT NULL,
     order_id BIGINT REFERENCES information_order(id),
-    chrt_id      INT,
+    chrt_id      BIGINT,
 	track_number VARCHAR,
-	price       INT,
+	price       BIGINT,
 	rid         VARCHAR,
 	name        VARCHAR,
-	sale        INT,
+	sale        BIGINT,
 	size        VARCHAR,
-	total_price  INT,
-	nm_id        INT,
+	total_price  BIGINT,
+	nm_id        BIGINT,
 	brand       VARCHAR,
-	status      INT
+	status      BIGINT
 );
 
+SELECT chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status FROM items WHERE order_id = 1

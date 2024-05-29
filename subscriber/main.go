@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	_ "net"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -72,32 +72,72 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	// go func(){
-	// 	db, _ := sql.Open("postgres", "dbname=wb_db sslmode=disable")
-	// 	defer db.Close()
-		
-	// 	rows, _ := db.Query("SELECT * FROM information_order")
-	// 	defer rows.Close()
+	go func() {
+		db, _ := sql.Open("postgres", "dbname=wb_db sslmode=disable")
+		defer db.Close()
 
-	// 	var orders []Orders
-	// 	for rows.Next(){
-	// 		var order Orders
-	// 		rows.Scan()
-	// 		orders = append(orders, order)
-	// 	}
-	// }()
+		rows, _ := db.Query("SELECT id, order_uid, track_number, entry, local, internal_signature, customer_id, delivery_service, shardkey, sm_id, date_created, oof_shard FROM information_order")
+		defer rows.Close()
+
+		var orders []Orders
+		for rows.Next() {
+			var order Orders = Orders{}
+			var id int
+			err := rows.Scan(&id, &order.OrderUid, &order.TrackNumber, &order.Entry, &order.Local, &order.InternalSignature,
+				&order.CustomerId, &order.DeliveryService, &order.Shardkey, &order.SmId, &order.DateCreated, &order.OofShard)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			rows_delivery, _ := db.Query("SELECT name, phone, zip, city, address, region, email FROM delivery WHERE order_id = $1", id)
+			defer rows_delivery.Close()
+			rows_delivery.Next()
+			err = rows_delivery.Scan(&order.Delivery.Name, &order.Delivery.Phone, &order.Delivery.Zip, &order.Delivery.City,
+				&order.Delivery.Address, &order.Delivery.Region, &order.Delivery.Email)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			rows_payment, _ := db.Query("SELECT transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_fee FROM payment WHERE order_id = $1", id)
+			defer rows_payment.Close()
+			rows_payment.Next()
+			err = rows_payment.Scan(&order.Payment.Transaction, &order.Payment.RequestId, &order.Payment.Currency, &order.Payment.Provider,
+				&order.Payment.Amount, &order.Payment.PaymentDt, &order.Payment.Bank, &order.Payment.DeliveryCost, &order.Payment.GoodsTotal,
+				&order.Payment.CustomFee)
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			rows_item, _ := db.Query("SELECT chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status FROM items WHERE order_id = $1", id)
+			defer rows_item.Close()
+			for rows_item.Next() {
+				var itm Item
+				err = rows_item.Scan(&itm.ChrtId, &itm.TrackNumber, &itm.Price, &itm.Rid, &itm.Name, &itm.Sale, &itm.Size, &itm.TotalPrice, &itm.NmID, &itm.Brand, &itm.Status)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				order.Items = append(order.Items, itm)
+			}
+
+			orders = append(orders, order)
+		}
+
+		js, _ := json.Marshal(orders)
+
+		fmt.Println(string(js))
+
+	}()
 
 	go func() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			_ , _ = template.ParseFiles("home.html")
-			// tmpl.Execute(w, orders)
+			tmpl, _ := template.ParseFiles("home.html")
+			tmpl.Execute(w, "")
 		})
 		fmt.Println("Server is listening...")
 		http.ListenAndServe("localhost:8181", nil)
 	}()
 
 	go func() {
-		var orders Orders
 		nc, err := nats.Connect(nats.DefaultURL)
 		if err != nil {
 			panic(err)
@@ -115,25 +155,30 @@ func main() {
 		}
 
 		nc.Subscribe("a", func(msg *nats.Msg) {
+			var orders Orders
 			err = json.Unmarshal(msg.Data, &orders)
 
 			_, _ = db.Exec(`INSERT INTO information_order(id, order_uid, track_number, entry, local, internal_signature, customer_id, delivery_service, shardkey, sm_id, date_created, oof_shard)
 			VALUES (COALESCE((SELECT MAX(id) FROM information_order), 0) + 1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, orders.OrderUid, orders.TrackNumber, orders.Entry, orders.Local,
 				orders.InternalSignature, orders.CustomerId, orders.DeliveryService, orders.Shardkey, orders.SmId, orders.DateCreated, orders.OofShard)
 
-			_, _ = db.Exec(`INSERT INTO delivery(id, order_id, name, phone, zip, city, address, region, email) 
+			_, _ = db.Exec(`INSERT INTO delivery(id, order_id, name, phone, zip, city, address, region, email)
 			VALUES (COALESCE((SELECT MAX(id) FROM delivery), 0) + 1, (SELECT MAX(id) FROM information_order), $1, $2, $3, $4, $5, $6, $7)`, orders.Delivery.Name, orders.Delivery.Phone,
 				orders.Delivery.Zip, orders.Delivery.City, orders.Delivery.Address, orders.Delivery.Region, orders.Delivery.Email)
 
-			_, _ = db.Exec(`INSERT INTO payment(id, order_id, transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_fee) 
+			_, _ = db.Exec(`INSERT INTO payment(id, order_id, transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_fee)
 				VALUES (COALESCE((SELECT MAX(id) FROM payment), 0) + 1, (SELECT MAX(id) FROM information_order), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, orders.Payment.Transaction,
 				orders.Payment.RequestId, orders.Payment.Currency, orders.Payment.Provider, orders.Payment.Amount, orders.Payment.PaymentDt, orders.Payment.Bank, orders.Payment.DeliveryCost,
 				orders.Payment.GoodsTotal, orders.Payment.CustomFee)
 
 			for _, value := range orders.Items {
-				_, _ = db.Exec(`INSERT INTO items(id, order_id, chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status) 
+				_, err = db.Exec(`INSERT INTO items(id, order_id, chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status)
 				VALUES (COALESCE((SELECT MAX(id) FROM items), 0) + 1, (SELECT MAX(id) FROM information_order), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, value.ChrtId,
 					value.TrackNumber, value.Price, value.Rid, value.Name, value.Sale, value.Size, value.TotalPrice, value.NmID, value.Brand, value.Status)
+
+				if err != nil {
+					log.Fatalln(err)
+				}
 			}
 
 		})
