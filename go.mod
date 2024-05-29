@@ -9,6 +9,7 @@ require (
 
 require (
 	github.com/klauspost/compress v1.17.3 // indirect
+	github.com/maxchagin/go-memorycache-example v0.0.0-20180524131321-f4bebbb0aa08 // indirect
 	github.com/nats-io/nkeys v0.4.7 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	golang.org/x/crypto v0.18.0 // indirect

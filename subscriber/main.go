@@ -11,6 +11,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/maxchagin/go-memorycache-example"
 	"github.com/nats-io/nats.go"
 )
 
@@ -68,10 +69,19 @@ type Item struct {
 	Status      int    `json:"status"`
 }
 
+type Data interface {
+	Orders
+	PrintData()
+}
+
+func (Orders) PrintData(orders map[string]Orders, key string) {
+	fmt.Println(orders[key])
+}
+
 func main() {
 	var wg sync.WaitGroup
-	var orders = make(map[string]Orders)
 	wg.Add(1)
+	cache := memorycache.New(60*time.Minute, 10*time.Minute)
 
 	go func() {
 		db, _ := sql.Open("postgres", "dbname=wb_db sslmode=disable")
@@ -118,19 +128,17 @@ func main() {
 				}
 				order.Items = append(order.Items, itm)
 			}
-
-			orders[order.OrderUid] = order
+			cache.Set(order.OrderUid, order, 5*time.Minute)
 		}
-
-		// js, _ := json.Marshal(orders)
-		// fmt.Println(string(js))
 	}()
 
 	go func() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			tmpl, _ := template.ParseFiles("home.html")
 			id := r.FormValue("Id")
-			tmpl.Execute(w, orders[id])
+			value, _ := cache.Get(id)
+			val, _ := value.(Orders)
+			tmpl.Execute(w, val)
 		})
 		fmt.Println("Server is listening...")
 		http.ListenAndServe("localhost:8181", nil)
