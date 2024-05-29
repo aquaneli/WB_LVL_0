@@ -187,7 +187,7 @@ func main() {
 					log.Fatalln(err)
 				}
 			}
-
+			cache.Set(orders.OrderUid, orders, 5*time.Minute)
 		})
 		wg.Wait()
 	}()
