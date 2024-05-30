@@ -3,7 +3,6 @@ package databases
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"module_0/internal/models"
 	"sync"
@@ -33,7 +32,6 @@ func NatsSub(cache *memorycache.Cache, wg *sync.WaitGroup) {
 	_, err = nc.Subscribe("orders", func(msg *nats.Msg) {
 		var orders models.Orders
 		err = json.Unmarshal(msg.Data, &orders)
-		fmt.Println(orders)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -44,6 +42,9 @@ func NatsSub(cache *memorycache.Cache, wg *sync.WaitGroup) {
 			insertPayment(db, &orders)
 			insertItems(db, &orders)
 			cache.Set(orders.OrderUid, orders, 1*time.Hour)
+			log.Println("Message published successfully")
+		} else {
+			log.Println("This OrderUid already exists")
 		}
 	})
 	if err != nil {

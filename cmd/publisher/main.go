@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -11,12 +10,14 @@ import (
 )
 
 func main() {
-	flag.Args()
-	f, err := os.Open("/Users/aquaneli/WB_LVL_0/model2.json")
+	var path string
+	fmt.Println("Enter the full path of the json file")
+	fmt.Scan(&path)
+	f, err := os.Open(path)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Println("Successfully Opened /Users/aquaneli/WB_LVL_0/model2.json")
+	fmt.Printf("Successfully Opened %s\n", path)
 	defer f.Close()
 
 	byteValue, err := io.ReadAll(f)
@@ -33,5 +34,5 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println("Message published successfully")
+	log.Println("The message has been sent")
 }
