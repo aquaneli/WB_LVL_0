@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -10,23 +11,27 @@ import (
 )
 
 func main() {
+	flag.Args()
 	f, err := os.Open("/Users/aquaneli/WB_LVL_0/model2.json")
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 	fmt.Println("Successfully Opened /Users/aquaneli/WB_LVL_0/model2.json")
 	defer f.Close()
 
-	byteValue, _ := io.ReadAll(f)
+	byteValue, err := io.ReadAll(f)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	ns, err := nats.Connect(nats.DefaultURL)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 
 	err = ns.Publish("orders", byteValue)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 	log.Println("Message published successfully")
 }
