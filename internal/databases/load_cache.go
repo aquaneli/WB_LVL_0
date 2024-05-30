@@ -35,7 +35,7 @@ func LoadInCache(cache *memorycache.Cache) {
 		selectPayment(db, &order, &id)
 		selectItems(db, &order, &id)
 
-		cache.Set(order.OrderUid, order, 5*time.Minute)
+		cache.Set(order.OrderUid, order, 1*time.Hour)
 	}
 }
 
