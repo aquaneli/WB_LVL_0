@@ -14,29 +14,42 @@
         <input type="submit" value="Show" />
     </form>
 
-
-
-    <b>
-        {{if .OrderUid}}
-        <p>OrderUid - {{ .OrderUid }}</p>
-        <p>TrackNumber - {{ .TrackNumber }}</p>
-        <p>Entry - {{ .Entry }}</p>
-        <p>Delivery - {{ .Delivery }}</p>
-        <p>Payment - {{ .Payment }}</p>
-        <p>Items - {{ .Items }}</p>
-        <p>Local - {{ .Local }}</p>
-        <p>InternalSignature - {{ .InternalSignature }}</p>
-        <p>CustomerId - {{ .CustomerId }}</p>
-        <p>DeliveryService - {{ .DeliveryService }}</p>
-        <p>Shardkey - {{ .Shardkey }}</p>
-        <p>SmId - {{ .SmId }}</p>
-        <p>DateCreated - {{ .DateCreated }}</p>
-        <p>OofShard - {{ .OofShard }}</p>
-        {{else}}
-        <p>No order</p>
+    <h1>Order Details</h1>
+    <div>
+        <p><strong>Order UID:</strong> {{.OrderUid}}</p>
+        <p><strong>Track Number:</strong> {{.TrackNumber}}</p>
+        <p><strong>Entry:</strong> {{.Entry}}</p>
+        <h2>Delivery</h2>
+        <p><strong>Name:</strong> {{.Delivery.Name}}</p>
+        <p><strong>Phone:</strong> {{.Delivery.Phone}}</p>
+        <p><strong>Zip:</strong> {{.Delivery.Zip}}</p>
+        <p><strong>City:</strong> {{.Delivery.City}}</p>
+        <p><strong>Address:</strong> {{.Delivery.Address}}</p>
+        <p><strong>Region:</strong> {{.Delivery.Region}}</p>
+        <p><strong>Email:</strong> {{.Delivery.Email}}</p>
+        <h2>Payment</h2>
+        <p><strong>Transaction:</strong> {{.Payment.Transaction}}</p>
+        <p><strong>Request ID:</strong> {{.Payment.RequestId}}</p>
+        <p><strong>Currency:</strong> {{.Payment.Currency}}</p>
+        <p><strong>Provider:</strong> {{.Payment.Provider}}</p>
+        <p><strong>Amount:</strong> {{.Payment.Amount}}</p>
+        <p><strong>Payment Date:</strong> {{.Payment.PaymentDt}}</p>
+        <p><strong>Bank:</strong> {{.Payment.Bank}}</p>
+        <p><strong>Delivery Cost:</strong> {{.Payment.DeliveryCost}}</p>
+        <p><strong>Goods Total:</strong> {{.Payment.GoodsTotal}}</p>
+        <p><strong>Custom Fee:</strong> {{.Payment.CustomFee}}</p>
+        <h2>Items</h2>
+        {{range .Items}}
+        <div>
+            <p><strong>Name:</strong> {{.Name}}</p>
+            <p><strong>Price:</strong> {{.Price}}</p>
+            <p><strong>Size:</strong> {{.Size}}</p>
+            <p><strong>Brand:</strong> {{.Brand}}</p>
+            <p><strong>Status:</strong> {{.Status}}</p>
+            <p>_____</p>
+        </div>
         {{end}}
-    </b>
-
+    </div>
 
 </body>
 

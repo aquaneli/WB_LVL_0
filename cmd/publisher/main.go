@@ -10,11 +10,11 @@ import (
 )
 
 func main() {
-	f, err := os.Open("/Users/aquaneli/WB_LVL_0/model.json")
+	f, err := os.Open("/Users/aquaneli/WB_LVL_0/model2.json")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Successfully Opened /Users/aquaneli/WB_LVL_0/model.json")
+	fmt.Println("Successfully Opened /Users/aquaneli/WB_LVL_0/model2.json")
 	defer f.Close()
 
 	byteValue, _ := io.ReadAll(f)
@@ -24,7 +24,7 @@ func main() {
 		panic(err)
 	}
 
-	err = ns.Publish("a", byteValue)
+	err = ns.Publish("orders", byteValue)
 	if err != nil {
 		panic(err)
 	}
