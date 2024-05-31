@@ -10,7 +10,7 @@ import (
 )
 
 func LoadInCache(cache *memorycache.Cache) {
-	db, err := sql.Open("postgres", "dbname=wb_db sslmode=disable")
+	db, err := sql.Open("postgres", "user=maksim password=12345 dbname=wb_db sslmode=disable")
 	if err != nil {
 		log.Fatalln(err)
 	}

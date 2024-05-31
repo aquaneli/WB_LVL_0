@@ -1,18 +1,8 @@
 CREATE DATABASE wb_db;
 
-CREATE ROLE adm
-NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT;
-DROP ROLE adm;
-
-CREATE USER maksim;
-DROP USER maksim;
-
-DROP TABLE delivery;
-DROP TABLE payment;
-DROP TABLE items;
-DROP TABLE information_order;
-
-TRUNCATE TABLE delivery, payment, items, information_order;
+CREATE USER maksim WITH PASSWORD '12345';
+GRANT ALL PRIVILEGES ON DATABASE wb_db TO maksim;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO maksim;
 
 CREATE TABLE IF NOT EXISTS information_order(
     id BIGINT PRIMARY KEY NOT NULL,
@@ -71,5 +61,3 @@ CREATE TABLE IF NOT EXISTS items(
 	brand       VARCHAR,
 	status      BIGINT
 );
-
-SELECT chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status FROM items WHERE order_id = 1
